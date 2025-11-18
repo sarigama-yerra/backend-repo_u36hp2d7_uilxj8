@@ -1,48 +1,73 @@
 """
-Database Schemas
+Database Schemas for Whoofsy
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model below corresponds to a MongoDB collection (lowercased class name).
+These are used for validation in the API and to document the data shape.
 """
 
+from typing import Optional, List, Literal
 from pydantic import BaseModel, Field
-from typing import Optional
+from datetime import datetime
 
-# Example schemas (replace with your own):
-
+# Users
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    provider: Literal["google"] = Field("google")
+    external_id: Optional[str] = Field(None, description="Provider user id")
+    email: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    tier: Literal["basic", "premium"] = Field("basic")
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+# Pet profiles
+class Pet(BaseModel):
+    owner_id: str
+    name: str
+    breed: Optional[str] = None
+    color: Optional[str] = None
+    photos: List[str] = Field(default_factory=list)
+    medical_notes: Optional[str] = None
+    allergies: Optional[str] = None
+    status: Literal["ACTIVE", "LOST"] = Field("ACTIVE")
+    contact_visibility: Literal["phone", "form", "both"] = Field("phone")
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
-# Add your own schemas here:
-# --------------------------------------------------
+# Physical/digital tag that maps to a pet
+class Tag(BaseModel):
+    code: str = Field(..., description="Unique code encoded in QR/NFC")
+    owner_id: Optional[str] = None
+    pet_id: Optional[str] = None
+    activated: bool = Field(False)
+    model: Literal["smart_tag", "smart_case"] = Field("smart_tag")
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+# Scan event
+class ScanEvent(BaseModel):
+    code: str
+    pet_id: Optional[str] = None
+    owner_id: Optional[str] = None
+    timestamp: Optional[datetime] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    accuracy: Optional[float] = None
+    user_agent: Optional[str] = None
+    referrer: Optional[str] = None
+
+# Subscription snapshot
+class Subscription(BaseModel):
+    user_id: str
+    tier: Literal["basic", "premium"] = Field("basic")
+    status: Literal["active", "canceled", "none"] = Field("none")
+    started_at: Optional[datetime] = None
+    ends_at: Optional[datetime] = None
+
+# One-time Good Samaritan coupon tied to a code
+class Coupon(BaseModel):
+    code: str
+    offer: str = Field("50% off your first Whoofsy tag")
+    redeemed: bool = False
+    created_at: Optional[datetime] = None
+    redeemed_at: Optional[datetime] = None
